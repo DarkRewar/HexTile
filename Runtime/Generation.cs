@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Lignus.HexTile
@@ -17,7 +18,38 @@ namespace Lignus.HexTile
                 (x, y) => new Hex(x, y)
             ).ToList();
 
-        public static List<Hex> Hexagon(Hex pos, int radius) => pos.Range(radius);
+        public static List<Hex> Hexagon(Hex pos, int radius)
+        {
+            List<Hex> hexes = new();
+            
+            for (int q = -radius; q <= radius; ++q)
+            {
+                int rStart = Math.Max(-radius, -q - radius),
+                    rEnd = Math.Min(radius, -q + radius);
+                for (int r = rStart; r <= rEnd; ++r)
+                {
+                    hexes.Add((q, r));
+                }
+            }
+        
+            return hexes;
+        }
+
+        // public static List<Hex> Hexagon(Hex pos, int radius) =>
+        //     Enumerable.Range(pos.q - radius, 2 * radius).SelectMany(
+        //         x => Enumerable.Range(
+        //             Math.Max(pos.r - radius, pos.r - x - radius), 
+        //             Math.Min(pos.r + radius, pos.r - x + radius) - Math.Max(pos.r - radius, pos.r - x - radius - 1)),
+        //         (x, y) => new Hex(x, y)
+        //     ).ToList();
+
+        public static List<Hex> Hexagon(int radius) => Hexagon(Hex.Zero, radius);
+            
+        //     ((pos.x() - radius)..=(pos.x() + radius)).flat_map(move |x| {
+        //     (((pos.y() - radius).max(pos.y() - x - radius))
+        //             ..=((pos.y() + radius).min(pos.y() - x + radius)))
+        //         .map(move |y| Hex::new(x, y))
+        // })
         
         // /// Generates a rectangle with the given bounds for "pointy topped" hexagons
         // pub fn pointy_rectangle([left, right, top, bottom]: [i32; 4]) -> impl Iterator<Item = Hex> {

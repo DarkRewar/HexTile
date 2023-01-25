@@ -1,7 +1,9 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace Lignus.HexTile
 {
+    [Serializable]
     public class Layout
     {
         public Orientation HexOrientation;
