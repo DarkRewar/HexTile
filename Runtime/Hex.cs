@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using JetBrains.Annotations;
-using Unity.VisualScripting.YamlDotNet.Core.Tokens;
 using UnityEngine;
 
 namespace Lignus.HexTile
@@ -20,7 +17,7 @@ namespace Lignus.HexTile
             new Hex(1, 0), new Hex(1, -1), new Hex(0, -1), new Hex(-1, 0), new Hex(-1, 1),
             new Hex(0, 1),
         };
-        
+
         public static Hex[] DiagonalCoordinates = new[]
         {
             new Hex(2, -1), new Hex(1, -2), new Hex(-1, -1), new Hex(-2, 1), new Hex(-1, 2),
@@ -43,17 +40,17 @@ namespace Lignus.HexTile
         }
 
         public Hex(int v) => q = r = v;
-        
+
         public Hex(int x, int y)
         {
             q = x;
             r = y;
         }
-        
+
         public Hex(int x, int y, int z)
         {
-            if (x + y + z != 0) 
-                throw new ArgumentException($"Wrong hex coordinates. Expected 0, got {x+y+z}");
+            if (x + y + z != 0)
+                throw new ArgumentException($"Wrong hex coordinates. Expected 0, got {x + y + z}");
             q = x;
             r = y;
         }
@@ -101,29 +98,63 @@ namespace Lignus.HexTile
             List<Hex> _hexes = new();
             for (int step = 0; step < distance; step++)
             {
-                var tempHex = Vector2.Lerp(a, b, (float) step / distance);
+                var tempHex = Vector2.Lerp(a, b, (float)step / distance);
                 _hexes.Add(Round(tempHex.x, tempHex.y));
             }
 
             return _hexes;
         }
 
-        public List<Hex> Range(int range)
+        public List<Hex> Range(int range) =>
+            Enumerable.Range(-range, 2 * range + 1).SelectMany(
+                x => Enumerable.Range(
+                    Math.Max(-range, -x - range),
+                    Math.Min(range, -x + range) - Math.Max(-range, -x - range) + 1),
+                (x, y) => new Hex(x, y)
+            ).ToList();
+
+        public Hex WrapInRange(int radius) => WrapWith(radius, WraparoundMirrors(radius));
+
+        public Hex WrapWith(int radius, Hex[] mirrors)
         {
-            List<Hex> hexes = new();
-            foreach (var x in Enumerable.Range(-range, range))
+            if (Length <= radius) return this;
+
+            foreach (var m in mirrors)
             {
-                foreach (var y in Enumerable.Range(Math.Max(-range, -x - range), Math.Min(range, range - x)))
-                {
-                    hexes.Add((x, y));
-                }
+                var p = m + this;
+                if (p.Length <= radius) return p;
             }
 
-            return hexes;
+            return this;
         }
-        
-        public List<Hex> Range(int range, Hex offset) => 
-            Range(range).Select(hex => hex + offset).ToList();
+
+        #region STATIC METHODS
+
+        /// <summary>
+        /// Computes the 6 mirror centers of the origin for hexagonal *wraparound* maps
+        /// of given `radius`.
+        ///
+        /// # Notes
+        /// * See [`Self::wrap_in_range`] for a usage
+        /// * Use [`HexMap`] for improved wrapping
+        /// * See this [article] for more information.
+        ///
+        /// [article]: https://www.redblobgames.com/grids/hexagons/#wraparound
+        /// </summary>
+        /// <param name="radius"></param>
+        /// <returns></returns>
+        public static Hex[] WraparoundMirrors(int radius)
+        {
+            var mirror = new Hex(2 * radius + 1, -radius);
+            return new Hex[] {
+                mirror.RotateLeft(),
+                mirror,
+                mirror.RotateRight(),
+                -mirror.RotateLeft(),
+                -mirror,
+                -mirror.RotateRight()
+            };
+        }
 
         public static Hex Round(float x, float y)
         {
@@ -138,16 +169,21 @@ namespace Lignus.HexTile
 
             return new Hex(q, r);
         }
-        
+
         public static int Distance(Hex a, Hex b) => (a - b).Length;
+
+        #endregion
+
+        #region OPERATORS
 
         public static implicit operator Hex((int q, int r) value) => new Hex(value.q, value.r);
 
         public static Hex operator +(Hex left, Hex right) =>
             new(left.q + right.q, left.r + right.r);
-        public static Hex operator +(Hex left, int i) =>
-            new(left.q + i, left.r + i);
+        public static Hex operator +(Hex left, int right) =>
+            new(left.q + right, left.r + right);
 
+        public static Hex operator -(Hex self) => new(-self.q, -self.r);
         public static Hex operator -(Hex left, Hex right) =>
             new(left.q - right.q, left.r - right.r);
         public static Hex operator -(Hex left, int i) =>
@@ -157,10 +193,14 @@ namespace Lignus.HexTile
             new(left.q * right.q, left.r * right.r);
         public static Hex operator *(Hex left, int right) =>
             new(left.q * right, left.r * right);
+        public static Hex operator *(int left, Hex right) =>
+            new(left * right.q, left * right.r);
 
         public static Hex operator /(Hex left, Hex right) =>
             new(left.q / right.q, left.r / right.r);
         public static Hex operator /(Hex left, int right) =>
             new(left.q / right, left.r / right);
+
+        #endregion
     }
 }
