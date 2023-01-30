@@ -10,7 +10,7 @@ namespace Lignus.HexTile
 
         [SerializeField] private GameObject _tilePrefab;
 
-        private Dictionary<Hex, GameObject> _tiles = new();
+        private readonly Dictionary<Hex, GameObject> _tiles = new();
 
         void Start()
         {
