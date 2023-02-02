@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Lignus.HexTile
 {
-    public struct Hex
+    public struct Hex : IEquatable<Hex>
     {
         public static Hex Zero => (0, 0);
         public static Hex One => new(1, 1);
@@ -57,6 +57,12 @@ namespace Lignus.HexTile
 
         public override string ToString() => $"Hex({q}, {r}, {s})";
 
+        public bool Equals(Hex other) => q == other.q && r == other.r;
+
+        public override bool Equals(object obj) => obj is Hex other && Equals(other);
+
+        public override int GetHashCode() => HashCode.Combine(q, r);
+
         public Hex RotateLeft() => new(-s, -q);
         public Hex RotateLeftAround(Hex anchor) => (this - anchor).RotateLeft() + anchor;
         public Hex RotateRight() => new(-r, -s);
@@ -66,17 +72,25 @@ namespace Lignus.HexTile
         public Hex NeighborCoord(int direction) => NeighborsCoordinates[direction];
 
         public Hex Neighbor(int direction) => this + NeighborCoord(direction);
-
-        public List<Hex> Ring(int range)
+        public Hex Neighbor(Direction direction) => this + NeighborCoord((int)direction);
+        
+        public List<Hex> Ring(uint range, Direction startDirection, bool clockwise)
         {
-            if (range <= 0)
-                throw new ArgumentException("Range must be superior to 0");
+            if (range == 0) return new List<Hex>{this};
 
-            var hex = this + (NeighborsCoordinates[(int)Direction.BottomLeft] * range);
-            var res = new List<Hex>();
-
-            foreach (var dir in NeighborsCoordinates)
+            List<Hex> res = new();
+            Hex hex = Neighbor(startDirection) * (int)range;
+            int start = clockwise ? NeighborsCoordinates.Length - 1 : 0,
+                end = clockwise ?  -1 : NeighborsCoordinates.Length;
+            for (int i = start; i != end; i += clockwise ? -1 : 1)
             {
+                var way = clockwise 
+                    ? i + (int)startDirection - 1
+                    : i + (int) startDirection + 2;
+                way %= NeighborsCoordinates.Length;
+                var dir = way < 0 
+                    ? NeighborsCoordinates[^Math.Abs(way)]
+                    : NeighborsCoordinates[way];
                 for (int j = 0; j < range; ++j)
                 {
                     res.Add(hex);
@@ -87,6 +101,21 @@ namespace Lignus.HexTile
             return res;
         }
 
+        public List<Hex> Ring(uint range) => Ring(range, Direction.BottomRight, false);
+
+        public List<Hex> SpiralRange(uint range, Direction startDirection, bool clockwise)
+        {
+            var res = new List<Hex>();
+            for (uint i = 0; i <= range; ++i)
+            {
+                res.AddRange(Ring(i, startDirection, clockwise));
+            }
+
+            return res;
+        }
+
+        public List<Hex> SpiralRange(uint range) => SpiralRange(range, Direction.BottomRight, false);
+
         public List<Hex> LineTo(Hex hex)
         {
             var distance = DistanceTo(hex);
@@ -95,14 +124,14 @@ namespace Lignus.HexTile
                 new Vector2(hex.q, hex.r)
             );
 
-            List<Hex> _hexes = new();
+            List<Hex> hexes = new();
             for (int step = 0; step < distance; step++)
             {
                 var tempHex = Vector2.Lerp(a, b, (float)step / distance);
-                _hexes.Add(Round(tempHex.x, tempHex.y));
+                hexes.Add(Round(tempHex.x, tempHex.y));
             }
 
-            return _hexes;
+            return hexes;
         }
 
         public List<Hex> Range(int range) =>
@@ -129,6 +158,8 @@ namespace Lignus.HexTile
         }
 
         #region STATIC METHODS
+
+        public static int RingCount(int range) => 6 * range;
 
         /// <summary>
         /// Computes the 6 mirror centers of the origin for hexagonal *wraparound* maps
@@ -177,6 +208,9 @@ namespace Lignus.HexTile
         #region OPERATORS
 
         public static implicit operator Hex((int q, int r) value) => new Hex(value.q, value.r);
+
+        public static bool operator ==(Hex left, Hex right) => left.Equals(right);
+        public static bool operator !=(Hex left, Hex right) => !left.Equals(right);
 
         public static Hex operator +(Hex left, Hex right) =>
             new(left.q + right.q, left.r + right.r);
