@@ -79,7 +79,7 @@ namespace Lignus.HexTile
             if (range == 0) return new List<Hex>{this};
 
             List<Hex> res = new();
-            Hex hex = Neighbor(startDirection) * (int)range;
+            Hex hex = this + NeighborsCoordinates[(int)startDirection] * (int)range;
             int start = clockwise ? NeighborsCoordinates.Length - 1 : 0,
                 end = clockwise ?  -1 : NeighborsCoordinates.Length;
             for (int i = start; i != end; i += clockwise ? -1 : 1)
@@ -134,13 +134,16 @@ namespace Lignus.HexTile
             return hexes;
         }
 
-        public List<Hex> Range(int range) =>
-            Enumerable.Range(-range, 2 * range + 1).SelectMany(
+        public List<Hex> Range(int range)
+        {
+            var self = this;
+            return  Enumerable.Range(-range, 2 * range + 1).SelectMany(
                 x => Enumerable.Range(
                     Math.Max(-range, -x - range),
                     Math.Min(range, -x + range) - Math.Max(-range, -x - range) + 1),
-                (x, y) => new Hex(x, y)
+                (x, y) => new Hex(x + self.q, y + self.r)
             ).ToList();
+        }
 
         public Hex WrapInRange(int radius) => WrapWith(radius, WraparoundMirrors(radius));
 
