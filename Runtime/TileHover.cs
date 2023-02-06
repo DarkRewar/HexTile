@@ -20,7 +20,7 @@ namespace Lignus.HexTile.Samples
             if (Physics.Raycast(ray, out RaycastHit hitInfo, 1000))
             {
                 var hex = _grid.HexLayout.WorldPosToHex(hitInfo.point);
-                var corners = _grid.HexLayout.HexCorners(hex);
+                var corners = _grid.HexLayout.GetHexCorners(hex);
                 _lineRenderer.SetPositions(corners.Select(corner => new Vector3(corner.x, 0.3f, corner.y)).ToArray());
             }
         }
