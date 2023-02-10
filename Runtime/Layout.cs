@@ -10,7 +10,7 @@ namespace Lignus.HexTile
     {
         public Orientation HexOrientation;
         public Vector2 Origin = Vector2.zero;
-        public Vector2 Size = Vector2.one;
+        public Vector2 Size = new(1, -1);
 
         public Vector2 HexToWorldPoint(Hex hex)
         {
