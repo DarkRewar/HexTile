@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,6 +12,8 @@ namespace Lignus.HexTile
         [SerializeField] private int _range = 5;
 
         [SerializeField] private GameObject _tilePrefab;
+
+        [Header("Debug")] [SerializeField] private bool _displayCoordinates;
 
         private readonly Dictionary<Hex, GameObject> _tiles = new();
 
@@ -40,5 +43,21 @@ namespace Lignus.HexTile
                 tile.name = $"Tile[{mirror.q}, {mirror.r}]";
             }
         }
+        
+        #if UNITY_EDITOR
+
+        private void OnDrawGizmos()
+        {
+            if (_displayCoordinates && _tiles.Count > 0)
+            {
+                UnityEditor.Handles.color = Color.white;
+                foreach (var tile in _tiles)
+                {
+                    UnityEditor.Handles.Label(tile.Value.transform.position, tile.Key.ToString());
+                }
+            }
+        }
+
+        #endif
     }
 }
